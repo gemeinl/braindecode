@@ -27,7 +27,7 @@ def custom_collate(batch, rng_state=None):
         return [custom_collate(samples, rng_state) for samples in transposed]
 
 
-class LoadCropsFromTrialsIterator(object):
+class LazyCropsFromTrialsIterator(object):
     """ This is basically the same code as CropsFromTrialsIterator adapted to
     work with lazy datasets. It uses pytorch DataLoader to load recordings
     from hdd with multiple threads when the data is actually needed. Reduces
