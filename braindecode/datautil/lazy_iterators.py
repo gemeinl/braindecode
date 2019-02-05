@@ -18,11 +18,6 @@ def custom_collate(batch, rng_state=None):
     """
     elem_type = type(batch[0])
     if elem_type.__module__ == 'numpy':
-        # in pytorch 1.0.0, internal random state is changed when using a
-        # DataLoader, even if num_workers is 0. this did not happen in torch
-        # 0.4.0 and breaks our equality tests of traditional and lazy loading
-        # therefore, in the collate function of every batch, reset to the
-        # random state before iterating through batches.
         if rng_state is not None:
             th.random.set_rng_state(rng_state)
         return np.stack([b for b in batch], 0)
@@ -76,6 +71,11 @@ class LoadCropsFromTrialsIterator(object):
 
     def get_batches(self, dataset, shuffle):
         random_state = th.random.get_rng_state()
+        # in pytorch 1.0.0, internal random state is changed when using a
+        # DataLoader, even if num_workers is 0. this did not happen in torch
+        # 0.4.0 and breaks our equality tests of traditional and lazy loading
+        # therefore, in the collate function of every batch, reset to the
+        # random state before iterating through batches.
         collate_fn = partial(self.collate_fn, rng_state=random_state)
         batch_indeces = self._get_batch_indeces(dataset=dataset,
                                                 shuffle=shuffle)
