@@ -57,7 +57,7 @@ class LazyCropsFromTrialsIterator(object):
     def __init__(self, input_time_length, n_preds_per_input, batch_size,
                  seed=328774, num_workers=0, collate_fn=custom_collate,
                  check_preds_smaller_trial_len=True,
-                 reset_rng_after_each_batch=True):
+                 reset_rng_after_each_batch=False):
         self.batch_size = batch_size
         self.seed = seed
         self.rng = RandomState(self.seed)
