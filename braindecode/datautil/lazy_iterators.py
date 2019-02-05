@@ -56,7 +56,8 @@ class LazyCropsFromTrialsIterator(object):
     """
     def __init__(self, input_time_length, n_preds_per_input, batch_size,
                  seed=328774, num_workers=0, collate_fn=custom_collate,
-                 check_preds_smaller_trial_len=True):
+                 check_preds_smaller_trial_len=True,
+                 reset_rng_after_each_batch=True):
         self.batch_size = batch_size
         self.seed = seed
         self.rng = RandomState(self.seed)
@@ -65,18 +66,22 @@ class LazyCropsFromTrialsIterator(object):
         self.num_workers = num_workers
         self.collate_fn = collate_fn
         self.check_preds_smaller_trial_len = check_preds_smaller_trial_len
+        self.reset_rng_after_each_batch = reset_rng_after_each_batch
 
     def reset_rng(self):
         self.rng = RandomState(self.seed)
 
     def get_batches(self, dataset, shuffle):
-        random_state = th.random.get_rng_state()
         # in pytorch 1.0.0, internal random state is changed when using a
         # DataLoader, even if num_workers is 0. this did not happen in torch
         # 0.4.0 and breaks our equality tests of traditional and lazy loading
         # therefore, in the collate function of every batch, reset to the
         # random state before iterating through batches.
-        collate_fn = partial(self.collate_fn, rng_state=random_state)
+        if self.reset_rng_after_each_batch:
+            random_state = th.random.get_rng_state()
+            collate_fn = partial(self.collate_fn, rng_state=random_state)
+        else:
+            collate_fn = partial(self.collate_fn, rng_state=None)
         batch_indeces = self._get_batch_indeces(dataset=dataset,
                                                 shuffle=shuffle)
         data_loader = DataLoader(dataset=dataset, batch_sampler=batch_indeces,
