@@ -459,7 +459,6 @@ class Experiment(object):
                                             dataset)
                 if result_dict is not None:
                     result_dicts_per_monitor[m].update(result_dict)
-
         row_dict = OrderedDict()
         for m in self.monitors:
             row_dict.update(result_dicts_per_monitor[m])
