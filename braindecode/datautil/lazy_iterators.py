@@ -1,23 +1,35 @@
 from torch.utils.data import DataLoader
 from numpy.random import RandomState
+from functools import partial
+import torch as th
 import numpy as np
 
 from braindecode.datautil.iterators import _compute_start_stop_block_inds, \
     get_balanced_batches
 
 
-def custom_collate(batch):
+def custom_collate(batch, rng_state=None):
     """ Puts each data field into a ndarray with outer dimension batch size.
     Taken and adapted from pytorch to return ndarrays instead of tensors:
     https://pytorch.org/docs/0.4.1/_modules/torch/utils/data/dataloader.html
+
+    this function is needed, since tensors require more system RAM which we
+    want to decrease using lazy loading
     """
     elem_type = type(batch[0])
     if elem_type.__module__ == 'numpy':
+        # in pytorch 1.0.0, internal random state is changed when using a
+        # DataLoader, even if num_workers is 0. this did not happen in torch
+        # 0.4.0 and breaks our equality tests of traditional and lazy loading
+        # therefore, in the collate function of every batch, reset to the
+        # random state before iterating through batches.
+        if rng_state is not None:
+            th.random.set_rng_state(rng_state)
         return np.stack([b for b in batch], 0)
 
     elif isinstance(batch[0], tuple):
         transposed = zip(*batch)
-        return [custom_collate(samples) for samples in transposed]
+        return [custom_collate(samples, rng_state) for samples in transposed]
 
 
 class LoadCropsFromTrialsIterator(object):
@@ -43,7 +55,7 @@ class LoadCropsFromTrialsIterator(object):
         The number of workers to load crops in parallel
     collate_fn: func
         Merges a list of samples to form a mini-batch
-    check_preds_smaller_trial_len: True
+    check_preds_smaller_trial_len: bool
         Checking validity of predictions and trial lengths. Disable to decrease
         runtime.
     """
@@ -63,11 +75,13 @@ class LoadCropsFromTrialsIterator(object):
         self.rng = RandomState(self.seed)
 
     def get_batches(self, dataset, shuffle):
+        random_state = th.random.get_rng_state()
+        collate_fn = partial(self.collate_fn, random_state=random_state)
         batch_indeces = self._get_batch_indeces(dataset=dataset,
                                                 shuffle=shuffle)
         data_loader = DataLoader(dataset=dataset, batch_sampler=batch_indeces,
                                  num_workers=self.num_workers,
-                                 pin_memory=False, collate_fn=self.collate_fn)
+                                 pin_memory=False, collate_fn=collate_fn)
         return data_loader
 
     def _get_batch_indeces(self, dataset, shuffle):
