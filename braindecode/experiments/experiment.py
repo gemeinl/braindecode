@@ -400,7 +400,7 @@ class Experiment(object):
             batch_generator = self.iterator.get_batches(dataset, shuffle=False)
             if hasattr(batch_generator, "__len__"):
                 # prevent loading of data to estimate number of batches when
-                # using # lazy iterators
+                # using lazy iterators
                 n_batches = len(batch_generator)
             else:
                 # iterating through traditional iterators is cheap, since
@@ -420,11 +420,11 @@ class Experiment(object):
                     max_size, n_ch, input_time_length, _ = inputs.shape
                     _, n_classes, n_preds_per_input = preds.shape
                     # pre-allocate memory for all predictions and targets
-                    all_preds = np.ones(
+                    all_preds =  np.nan * np.ones(
                         (n_batches * max_size, n_classes, n_preds_per_input),
-                        dtype=np.float32) * np.nan
+                        dtype=np.float32)
                     all_preds[:len(preds)] = preds
-                    all_targets = np.ones((n_batches * max_size)) * np.nan
+                    all_targets =  np.nan * np.ones((n_batches * max_size))
                     all_targets[:len(targets)] = targets
                 else:
                     start_i = sum(all_batch_sizes[:-1])
