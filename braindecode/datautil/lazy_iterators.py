@@ -76,7 +76,7 @@ class LoadCropsFromTrialsIterator(object):
 
     def get_batches(self, dataset, shuffle):
         random_state = th.random.get_rng_state()
-        collate_fn = partial(self.collate_fn, random_state=random_state)
+        collate_fn = partial(self.collate_fn, rng_state=random_state)
         batch_indeces = self._get_batch_indeces(dataset=dataset,
                                                 shuffle=shuffle)
         data_loader = DataLoader(dataset=dataset, batch_sampler=batch_indeces,
